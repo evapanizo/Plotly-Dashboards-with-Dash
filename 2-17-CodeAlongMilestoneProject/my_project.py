@@ -20,8 +20,8 @@ dates_dict = {days: (dt.today() - td(days=days)).strftime("%Y-%m-%d") for days i
 data.rename(index=dates_dict, inplace=True)
 
 # Useful variables
-min_date = data.index[-1]
-max_date = (dt.strptime(data.index[0], "%Y-%m-%d") + td(days=1)).strftime("%Y-%m-%d")
+min_date = dt.strptime(data.index[-1], "%Y-%m-%d")
+max_date = dt.strptime(data.index[0], "%Y-%m-%d") + td(days=1)
 
 # Companies
 companies_list = data.columns.sort_values()
@@ -48,9 +48,9 @@ app.layout = html.Div([
             html.H3("Select start and end dates:"),
             dcc.DatePickerRange(id='date-picker-range',
                                 start_date=min_date,
-                                end_date=data.index[0],
+                                end_date=dt.today(),
                                 min_date_allowed=min_date, 
-                                max_date_allowed=max_date,
+                                max_date_allowed=dt.today(),
                                 display_format = "YYYY-MM-DD"
             )
         ]),
@@ -73,14 +73,14 @@ app.layout = html.Div([
               State("date-picker-range", "start_date"),
               State("date-picker-range", "end_date")])
 def update_time_series(n_clicks, companies, start, end):
-    end = dt.strptime(end, "%Y-%m-%d")
-    start = dt.strptime(start, "%Y-%m-%d")
+    start = dt.strptime(start[0:10], "%Y-%m-%d")
+    end = dt.strptime(end[0:10], "%Y-%m-%d")
     dates = [(start + td(days=days)).strftime("%Y-%m-%d") for days in range((end-start).days + 1)]
     filtered_data = data.loc[dates, companies]
     traces = [go.Scatter(x=filtered_data.index, y=filtered_data[company], mode="lines", name=company) for company in companies]
     return {"data": traces, 
             "layout": go.Layout(title="Closing Prices",
-                                xaxis=dict(range=[start, end]))}
+                                xaxis=dict(type="date", range=(start, end), tickformat="%d %B %Y"))}
 
 # Run Dash app
 if __name__ == "__main__":
